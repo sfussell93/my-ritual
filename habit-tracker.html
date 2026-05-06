@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Daily Ritual</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --cream:#FAF7F2; --warm-white:#F5F0E8; --blush:#E8C4B8;
+  --rose:#C97B6E; --deep-rose:#A0544A; --sage:#8FAF8F;
+  --deep-sage:#5C7A5C; --lavender:#B8A8C8; --gold:#C9A84C;
+  --charcoal:#2A2A2A; --mid-gray:#7A7A7A; --light-gray:#E8E4DC;
+  --green:#4A7C59; --orange:#D4845A; --purple:#7B6EA0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--charcoal);min-height:100vh;
+  background-image:radial-gradient(ellipse at 10% 0%,rgba(232,196,184,.3) 0%,transparent 50%),
+  radial-gradient(ellipse at 90% 100%,rgba(184,168,200,.25) 0%,transparent 50%),
+  radial-gradient(ellipse at 50% 50%,rgba(143,175,143,.1) 0%,transparent 70%)}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:1000;
+  background-image:radial-gradient(ellipse at 10% 0%,rgba(232,196,184,.3) 0%,transparent 50%),
+  radial-gradient(ellipse at 90% 100%,rgba(184,168,200,.25) 0%,transparent 50%)}
+.login-box{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-radius:24px;padding:40px 36px;
+  text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.1);border:1px solid rgba(255,255,255,.9);max-width:360px;width:90%}
+.login-box h2{font-family:'Playfair Display',serif;font-size:28px;margin-bottom:6px}
+.login-box h2 em{color:var(--deep-rose);font-style:italic}
+.login-box p{font-size:13px;color:var(--mid-gray);margin-bottom:28px}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--light-gray);background:white;transition:all .2s}
+.pin-dot.filled{background:var(--deep-sage);border-color:var(--deep-sage)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:220px;margin:0 auto 16px}
+.pin-key{padding:16px;border:1.5px solid var(--light-gray);border-radius:14px;background:var(--warm-white);
+  font-family:'Playfair Display',serif;font-size:20px;cursor:pointer;transition:all .15s}
+.pin-key:hover{background:var(--light-gray);transform:scale(1.05)}
+.pin-key:active{transform:scale(.95)}
+.pin-error{color:var(--deep-rose);font-size:12px;min-height:18px;margin-top:4px}
+.pin-hint{font-size:11px;color:var(--mid-gray);margin-top:10px}
+.btn-set-pin{margin-top:12px;padding:8px 20px;background:var(--charcoal);color:var(--cream);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;letter-spacing:.5px}
+#loginScreen.hidden{display:none}
+
+/* ── SYNC INDICATOR ── */
+.sync-bar{text-align:center;padding:6px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--mid-gray)}
+.sync-bar.syncing{color:var(--gold)}.sync-bar.ok{color:var(--deep-sage)}.sync-bar.err{color:var(--deep-rose)}
+
+/* ── HEADER ── */
+header{text-align:center;padding:30px 20px 16px}
+.date-pill{display:inline-block;background:var(--charcoal);color:var(--cream);font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;padding:6px 18px;border-radius:20px;margin-bottom:12px;font-weight:500}
+h1{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,5vw,3rem);color:var(--charcoal);font-weight:400;line-height:1.1}
+h1 em{color:var(--deep-rose);font-style:italic}
+.subtitle{font-size:13px;color:var(--mid-gray);margin-top:6px}
+.logout-btn{font-size:11px;color:var(--mid-gray);background:none;border:1px solid var(--light-gray);
+  padding:4px 12px;border-radius:10px;cursor:pointer;margin-top:10px;letter-spacing:.5px}
+.logout-btn:hover{border-color:var(--rose);color:var(--rose)}
+
+/* ── RINGS ── */
+.overview-ring{display:flex;justify-content:center;align-items:center;gap:30px;padding:20px 20px;flex-wrap:wrap}
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.ring-wrap svg{filter:drop-shadow(0 4px 12px rgba(0,0,0,.08))}
+.ring-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mid-gray);font-weight:500}
+
+/* ── DASHBOARD ── */
+.dashboard{max-width:960px;margin:0 auto;padding:0 14px 60px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:640px){.dashboard{grid-template-columns:1fr}}
+.card{background:rgba(255,255,255,.75);backdrop-filter:blur(8px);border-radius:20px;padding:22px;
+  border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 24px rgba(0,0,0,.06);
+  transition:transform .2s,box-shadow .2s;animation:fadeIn .4s ease backwards}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.1)}
+.card.full-width{grid-column:1/-1}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.card-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.icon-rose{background:rgba(201,123,110,.15)}.icon-sage{background:rgba(92,122,92,.15)}
+.icon-lavender{background:rgba(184,168,200,.25)}.icon-gold{background:rgba(201,168,76,.15)}
+.icon-blush{background:rgba(232,196,184,.4)}.icon-green{background:rgba(74,124,89,.15)}
+.card-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--charcoal)}
+.card-subtitle{font-size:11px;color:var(--mid-gray);margin-top:1px;letter-spacing:.5px}
+
+/* ── HABITS ── */
+.habit-list{display:flex;flex-direction:column;gap:8px}
+.habit-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;
+  background:var(--warm-white);border:1.5px solid transparent;transition:all .25s;user-select:none}
+.habit-item:hover{background:var(--light-gray)}
+.habit-item.done{background:rgba(92,122,92,.1);border-color:rgba(92,122,92,.25)}
+.habit-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--light-gray);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .25s;background:white;cursor:pointer}
+.habit-item.done .habit-check{background:var(--deep-sage);border-color:var(--deep-sage)}
+.check-icon{opacity:0;transform:scale(0);transition:all .2s cubic-bezier(.34,1.56,.64,1);color:white;font-size:11px}
+.habit-item.done .check-icon{opacity:1;transform:scale(1)}
+.habit-name-wrap{flex:1;min-width:0}
+.habit-name{font-size:13px;font-weight:400;transition:color .25s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.habit-item.done .habit-name{color:var(--deep-sage);text-decoration:line-through;text-decoration-color:rgba(92,122,92,.4)}
+.habit-name-input{font-size:13px;font-family:'DM Sans',sans-serif;border:none;background:transparent;outline:none;
+  color:var(--charcoal);width:100%;border-bottom:1.5px solid var(--sage)}
+.habit-streak{font-size:11px;color:var(--mid-gray);background:var(--cream);padding:2px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+.habit-streak.hot{color:var(--deep-rose);background:rgba(201,123,110,.12);font-weight:500}
+.habit-actions{display:flex;gap:4px;flex-shrink:0}
+.hab-btn{background:none;border:none;cursor:pointer;font-size:13px;color:var(--mid-gray);padding:2px 4px;border-radius:6px;transition:all .15s;line-height:1}
+.hab-btn:hover{background:var(--light-gray);color:var(--charcoal)}
+.add-habit-row{display:flex;gap:8px;margin-top:10px}
+.add-habit-row input{flex:1;padding:8px 12px;border:1.5px solid var(--light-gray);border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:13px;background:white;color:var(--charcoal);outline:none;transition:border-color .2s}
+.add-habit-row input:focus{border-color:var(--sage)}
+.add-habit-row input::placeholder{color:var(--mid-gray)}
+.btn-small{padding:8px 14px;background:var(--charcoal);color:var(--cream);border:none;border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-small:hover{background:var(--deep-rose)}
+
+/* ── PLANT TRACKER ── */
+.plant-counter{text-align:center;margin-bottom:16px}
+.plant-number{font-family:'Playfair Display',serif;font-size:52px;color:var(--green);line-height:1}
+.plant-number.goal{color:var(--gold)}
+.plant-label{font-size:12px;color:var(--mid-gray);letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+.plant-progress{height:8px;background:var(--light-gray);border-radius:4px;margin:10px 0 4px;overflow:hidden}
+.plant-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--sage),var(--green));transition:width .4s cubic-bezier(.34,1.2,.64,1)}
+.plant-progress-label{font-size:11px;color:var(--mid-gray);text-align:right;margin-bottom:14px}
+.week-reset-note{font-size:11px;color:var(--mid-gray);text-align:center;margin-bottom:14px}
+.plant-categories{display:flex;flex-direction:column;gap:14px}
+.plant-cat-title{font-size:12px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.plant-cat-title.veg{color:var(--green)}.plant-cat-title.fruit{color:var(--orange)}.plant-cat-title.grain{color:var(--purple)}
+.plant-chips{display:flex;flex-wrap:wrap;gap:6px}
+.plant-chip{padding:5px 12px;border-radius:20px;font-size:12px;border:1.5px solid var(--light-gray);
+  background:var(--warm-white);cursor:pointer;transition:all .2s;user-select:none;display:flex;align-items:center;gap:5px}
+.plant-chip.ticked{background:rgba(74,124,89,.12);border-color:rgba(74,124,89,.4);color:var(--green);font-weight:500}
+.plant-chip.ticked.fruit-chip{background:rgba(212,132,90,.1);border-color:rgba(212,132,90,.4);color:var(--orange)}
+.plant-chip.ticked.grain-chip{background:rgba(123,110,160,.1);border-color:rgba(123,110,160,.4);color:var(--purple)}
+.plant-chip:hover{transform:scale(1.04)}
+.custom-plant-row{display:flex;gap:8px;margin-top:10px}
+.custom-plant-row input{flex:1;padding:7px 12px;border:1.5px solid var(--light-gray);border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:12px;background:white;color:var(--charcoal);outline:none;transition:border-color .2s}
+.custom-plant-row input:focus{border-color:var(--sage)}
+
+/* ── CALORIES ── */
+.calorie-goal-bar{height:8px;background:var(--light-gray);border-radius:4px;margin:10px 0 5px;overflow:hidden}
+.calorie-fill{height:100%;border-radius:4px;transition:width .4s cubic-bezier(.34,1.2,.64,1);background:linear-gradient(90deg,var(--sage),var(--deep-sage))}
+.calorie-fill.over{background:linear-gradient(90deg,var(--rose),var(--deep-rose))}
+.calorie-numbers{display:flex;justify-content:space-between;font-size:12px;color:var(--mid-gray);margin-bottom:14px}
+.calorie-total{font-family:'Playfair Display',serif;font-size:40px;text-align:center;line-height:1;margin:6px 0 3px;transition:color .3s}
+.calorie-total.over{color:var(--deep-rose)}
+.cal-unit{text-align:center;font-size:12px;color:var(--mid-gray);letter-spacing:1px;text-transform:uppercase;margin-bottom:18px}
+.calorie-log{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:7px 11px;background:var(--warm-white);border-radius:10px;font-size:13px;animation:fadeIn .2s ease}
+.log-item-name{color:var(--charcoal)}
+.log-item-right{display:flex;align-items:center;gap:8px}
+.log-item-cal{font-weight:500;color:var(--deep-sage);font-size:12px}
+.log-delete{background:none;border:none;cursor:pointer;color:var(--light-gray);font-size:13px;padding:2px 4px;transition:color .2s}
+.log-delete:hover{color:var(--deep-rose)}
+.cal-input-row{display:flex;gap:8px}
+.cal-input-row input{padding:9px 12px;border:1.5px solid var(--light-gray);border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:13px;background:white;color:var(--charcoal);outline:none;transition:border-color .2s}
+.cal-input-row input:focus{border-color:var(--sage)}
+.cal-input-row input::placeholder{color:var(--mid-gray)}
+.btn-add{padding:9px 16px;background:var(--charcoal);color:var(--cream);border:none;border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-add:hover{background:var(--deep-rose);transform:scale(1.02)}
+.goal-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--light-gray)}
+.goal-row label{font-size:12px;color:var(--mid-gray);flex:1}
+.goal-row input{width:78px;padding:6px 10px;border:1.5px solid var(--light-gray);border-radius:8px;font-size:13px;
+  font-family:'DM Sans',sans-serif;text-align:center;outline:none;transition:border-color .2s}
+.goal-row input:focus{border-color:var(--gold)}
+
+/* ── STREAKS ── */
+.streak-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.streak-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--warm-white);border-radius:12px}
+.streak-habit-name{font-size:12px;color:var(--charcoal);flex:1;margin-right:8px}
+.streak-count{font-family:'Playfair Display',serif;font-size:20px;color:var(--deep-rose);line-height:1}
+.streak-unit{font-size:10px;color:var(--mid-gray);letter-spacing:.5px;text-transform:uppercase}
+.streak-zero .streak-count{color:var(--mid-gray)}
+
+/* ── WATER ── */
+.water-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.water-glass{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--light-gray);background:var(--warm-white);
+  cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.water-glass.filled{background:rgba(120,180,220,.25);border-color:rgba(120,180,220,.5)}
+.water-glass:hover{transform:scale(1.1)}
+.water-label{font-size:12px;color:var(--mid-gray);margin-top:7px}
+
+/* ── MOOD ── */
+.mood-row{display:flex;gap:7px;flex-wrap:wrap}
+.mood-btn{flex:1;min-width:40px;padding:9px 5px;border:1.5px solid var(--light-gray);border-radius:10px;
+  background:var(--warm-white);cursor:pointer;font-size:19px;text-align:center;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:2px}
+.mood-btn span{font-size:10px;color:var(--mid-gray);font-family:'DM Sans',sans-serif}
+.mood-btn:hover{transform:scale(1.05);border-color:var(--blush)}
+.mood-btn.selected{border-color:var(--rose);background:rgba(232,196,184,.3)}
+
+/* ── NOTES ── */
+.notes-area{width:100%;padding:12px;border:1.5px solid var(--light-gray);border-radius:12px;font-family:'DM Sans',sans-serif;
+  font-size:13px;background:var(--warm-white);color:var(--charcoal);resize:vertical;min-height:80px;outline:none;
+  transition:border-color .2s;line-height:1.6}
+.notes-area:focus{border-color:var(--lavender)}
+.notes-area::placeholder{color:var(--mid-gray);font-style:italic}
+
+/* ── RESET ── */
+.reset-bar{text-align:center;padding:16px 0 0;grid-column:1/-1}
+.btn-reset{background:none;border:1.5px solid var(--light-gray);color:var(--mid-gray);padding:10px 28px;border-radius:20px;
+  font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn-reset:hover{border-color:var(--rose);color:var(--rose)}
+
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+.pop{animation:pop .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>My Daily <em>Ritual</em></h2>
+    <p id="loginSubtitle">Enter your PIN to continue</p>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey('0')" style="grid-column:2">0</button>
+      <button class="pin-key" onclick="pinBackspace()">⌫</button>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+    <div class="pin-hint" id="pinHint"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+<div id="appContent" style="display:none">
+  <div class="sync-bar" id="syncBar">○ not connected</div>
+
+  <header>
+    <div class="date-pill" id="dateDisplay"></div>
+    <h1>My Daily <em>Ritual</em></h1>
+    <p class="subtitle">Track your habits, nourish your body, honour your day.</p>
+    <br>
+    <button class="logout-btn" onclick="logout()">lock 🔒</button>
+  </header>
+
+  <div class="overview-ring">
+    <div class="ring-wrap">
+      <svg width="76" height="76" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#E8E4DC" stroke-width="7"/>
+        <circle id="ringHabits" cx="40" cy="40" r="34" fill="none" stroke="#5C7A5C" stroke-width="7" stroke-dasharray="213.6" stroke-dashoffset="213.6" stroke-linecap="round" transform="rotate(-90 40 40)" style="transition:stroke-dashoffset .6s cubic-bezier(.34,1.2,.64,1)"/>
+        <text x="40" y="45" text-anchor="middle" font-family="Playfair Display,serif" font-size="15" fill="#2A2A2A" id="ringHabitsText">0%</text>
+      </svg>
+      <div class="ring-label">Habits</div>
+    </div>
+    <div class="ring-wrap">
+      <svg width="76" height="76" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#E8E4DC" stroke-width="7"/>
+        <circle id="ringSkin" cx="40" cy="40" r="34" fill="none" stroke="#C97B6E" stroke-width="7" stroke-dasharray="213.6" stroke-dashoffset="213.6" stroke-linecap="round" transform="rotate(-90 40 40)" style="transition:stroke-dashoffset .6s cubic-bezier(.34,1.2,.64,1)"/>
+        <text x="40" y="45" text-anchor="middle" font-family="Playfair Display,serif" font-size="15" fill="#2A2A2A" id="ringSkinText">0%</text>
+      </svg>
+      <div class="ring-label">Skincare</div>
+    </div>
+    <div class="ring-wrap">
+      <svg width="76" height="76" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#E8E4DC" stroke-width="7"/>
+        <circle id="ringWater" cx="40" cy="40" r="34" fill="none" stroke="#78B4DC" stroke-width="7" stroke-dasharray="213.6" stroke-dashoffset="213.6" stroke-linecap="round" transform="rotate(-90 40 40)" style="transition:stroke-dashoffset .6s cubic-bezier(.34,1.2,.64,1)"/>
+        <text x="40" y="45" text-anchor="middle" font-family="Playfair Display,serif" font-size="15" fill="#2A2A2A" id="ringWaterText">0%</text>
+      </svg>
+      <div class="ring-label">Water</div>
+    </div>
+    <div class="ring-wrap">
+      <svg width="76" height="76" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#E8E4DC" stroke-width="7"/>
+        <circle id="ringPlants" cx="40" cy="40" r="34" fill="none" stroke="#4A7C59" stroke-width="7" stroke-dasharray="213.6" stroke-dashoffset="213.6" stroke-linecap="round" transform="rotate(-90 40 40)" style="transition:stroke-dashoffset .6s cubic-bezier(.34,1.2,.64,1)"/>
+        <text x="40" y="45" text-anchor="middle" font-family="Playfair Display,serif" font-size="15" fill="#2A2A2A" id="ringPlantsText">0%</text>
+      </svg>
+      <div class="ring-label">Plants</div>
+    </div>
+  </div>
+
+  <div class="dashboard">
+
+    <!-- MORNING HABITS -->
+    <div class="card" id="card-morning">
+      <div class="card-header">
+        <div class="card-icon icon-gold">🌅</div>
+        <div><div class="card-title">Morning Rituals</div><div class="card-subtitle">Start the day right</div></div>
+      </div>
+      <div class="habit-list" id="morningList"></div>
+      <div class="add-habit-row" style="margin-top:10px">
+        <input type="text" id="newMorning" placeholder="Add a habit…"/>
+        <button class="btn-small" onclick="addHabit('morning',document.getElementById('newMorning'))">+</button>
+      </div>
+    </div>
+
+    <!-- EVENING SKINCARE -->
+    <div class="card" id="card-skincare">
+      <div class="card-header">
+        <div class="card-icon icon-rose">🌙</div>
+        <div><div class="card-title">Evening Skincare</div><div class="card-subtitle">Your nightly glow ritual</div></div>
+      </div>
+      <div class="habit-list" id="skincareList"></div>
+      <div class="add-habit-row" style="margin-top:10px">
+        <input type="text" id="newSkincare" placeholder="Add a step…"/>
+        <button class="btn-small" onclick="addHabit('skincare',document.getElementById('newSkincare'))">+</button>
+      </div>
+    </div>
+
+    <!-- HOBBIES -->
+    <div class="card" id="card-hobbies">
+      <div class="card-header">
+        <div class="card-icon icon-lavender">✨</div>
+        <div><div class="card-title">Hobbies & Wellness</div><div class="card-subtitle">Things that fill your cup</div></div>
+      </div>
+      <div class="habit-list" id="hobbiesList"></div>
+      <div class="add-habit-row" style="margin-top:10px">
+        <input type="text" id="newHobby" placeholder="Add a hobby…"/>
+        <button class="btn-small" onclick="addHabit('hobbies',document.getElementById('newHobby'))">+</button>
+      </div>
+    </div>
+
+    <!-- WATER + MOOD -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-sage">💧</div>
+        <div><div class="card-title">Hydration</div><div class="card-subtitle">Aim for 8 glasses</div></div>
+      </div>
+      <div class="water-row" id="waterGlasses"></div>
+      <div class="water-label" id="waterLabel">0 / 8 glasses</div>
+      <div style="margin-top:18px;margin-bottom:9px">
+        <div class="card-title" style="font-size:13px;margin-bottom:9px">How are you feeling?</div>
+        <div class="mood-row">
+          <button class="mood-btn" onclick="setMood(this,'😴 Tired')">😴<span>Tired</span></button>
+          <button class="mood-btn" onclick="setMood(this,'😌 Calm')">😌<span>Calm</span></button>
+          <button class="mood-btn" onclick="setMood(this,'😊 Good')">😊<span>Good</span></button>
+          <button class="mood-btn" onclick="setMood(this,'🤩 Great')">🤩<span>Great</span></button>
+          <button class="mood-btn" onclick="setMood(this,'😤 Stressed')">😤<span>Stressed</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 30 PLANTS TRACKER -->
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-icon icon-green">🌿</div>
+        <div>
+          <div class="card-title">30 Plants This Week</div>
+          <div class="card-subtitle" id="weekRangeLabel">Tick off each different plant, veg, fruit, grain or legume</div>
+        </div>
+      </div>
+      <div class="plant-counter">
+        <div class="plant-number" id="plantCount">0</div>
+        <div class="plant-label">of 30 this week</div>
+      </div>
+      <div class="plant-progress"><div class="plant-fill" id="plantBar" style="width:0%"></div></div>
+      <div class="plant-progress-label" id="plantProgressLabel">0 / 30</div>
+
+      <div class="plant-categories">
+        <div>
+          <div class="plant-cat-title veg">🥦 Vegetables</div>
+          <div class="plant-chips" id="vegChips"></div>
+        </div>
+        <div>
+          <div class="plant-cat-title fruit">🍓 Fruits</div>
+          <div class="plant-chips" id="fruitChips"></div>
+        </div>
+        <div>
+          <div class="plant-cat-title grain">🌾 Grains, Legumes & Nuts</div>
+          <div class="plant-chips" id="grainChips"></div>
+        </div>
+      </div>
+
+      <div class="custom-plant-row" style="margin-top:14px">
+        <input type="text" id="customPlantInput" placeholder="Add a custom plant food…"/>
+        <button class="btn-small" onclick="addCustomPlant()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- CALORIES -->
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-icon icon-blush">🍽️</div>
+        <div><div class="card-title">Daily Calories</div><div class="card-subtitle">Log your meals throughout the day</div></div>
+      </div>
+      <div class="calorie-total" id="calTotal">0</div>
+      <div class="cal-unit">kcal today</div>
+      <div class="calorie-goal-bar"><div class="calorie-fill" id="calBar" style="width:0%"></div></div>
+      <div class="calorie-numbers"><span>0</span><span id="calGoalLabel">Goal: 2000 kcal</span><span id="calGoalMax">2000</span></div>
+      <div class="calorie-log" id="calLog"></div>
+      <div class="cal-input-row">
+        <input type="text" id="calFoodName" placeholder="Food or meal name…" style="flex:1"/>
+        <input type="number" id="calAmount" placeholder="kcal" min="0" style="width:85px;flex:none"/>
+        <button class="btn-add" onclick="addCalorie()">+ Add</button>
+      </div>
+      <div class="goal-row">
+        <label>Daily calorie goal</label>
+        <input type="number" id="calGoalInput" value="2000" min="500" max="5000" onchange="updateGoal()"/>
+        <span style="font-size:12px;color:var(--mid-gray)">kcal</span>
+      </div>
+    </div>
+
+    <!-- STREAKS -->
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-icon icon-gold">🔥</div>
+        <div><div class="card-title">Streak History</div><div class="card-subtitle">Consecutive days each habit has been completed</div></div>
+      </div>
+      <div class="streak-grid" id="streakGrid"></div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-icon icon-lavender">📝</div>
+        <div><div class="card-title">Today's Notes</div><div class="card-subtitle">Reflections, wins, intentions…</div></div>
+      </div>
+      <textarea class="notes-area" id="notesArea" placeholder="How did today feel? Any wins, intentions, or things to remember…" oninput="debouncedSave()"></textarea>
+    </div>
+
+    <div class="reset-bar">
+      <button class="btn-reset" onclick="completeDay()">✦ Complete Day & Reset</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CONFIGURATION — fill in after Supabase setup
+// ═══════════════════════════════════════════════
+const SUPABASE_URL = 'https://azpmoxcfzjmavqibxsxb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6cG1veGNmemptYXZxaWJ4c3hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwOTA0MzUsImV4cCI6MjA5MzY2NjQzNX0.NRyBx6riL_DwRch4dE2XuI-StaH-XOceFddTn2krXiw';
+
+// ═══════════════════════════════════════════════
+//  SUPABASE INIT
+// ═══════════════════════════════════════════════
+const { createClient } = supabase;
+let db = null;
+let userId = null;
+
+function initSupabase() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') return;
+  try { db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) { console.warn('Supabase init failed', e); }
+}
+initSupabase();
+
+// ═══════════════════════════════════════════════
+//  DATE HELPERS
+// ═══════════════════════════════════════════════
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function prevKey(k) {
+  const [y,m,d]=k.split('-').map(Number), dt=new Date(y,m-1,d);
+  dt.setDate(dt.getDate()-1);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+function weekKey() {
+  const d = new Date(), day = d.getDay();
+  const monday = new Date(d); monday.setDate(d.getDate() - (day===0?6:day-1));
+  return `${monday.getFullYear()}-W${String(Math.ceil((((monday - new Date(monday.getFullYear(),0,1))/86400000)+1)/7)).padStart(2,'0')}`;
+}
+function weekRangeLabel() {
+  const d = new Date(), day = d.getDay();
+  const mon = new Date(d); mon.setDate(d.getDate()-(day===0?6:day-1));
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  return `Week of ${MONTHS[mon.getMonth()]} ${mon.getDate()} – ${sun.getDate()}`;
+}
+
+// ═══════════════════════════════════════════════
+//  LOCAL STORAGE HELPERS (offline fallback)
+// ═══════════════════════════════════════════════
+function ls(k,def){ try{ const v=localStorage.getItem(k); return v!==null?JSON.parse(v):def; }catch{return def;} }
+function ss(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} }
+
+// ═══════════════════════════════════════════════
+//  PIN AUTH
+// ═══════════════════════════════════════════════
+let pinBuffer = '';
+const STORED_HASH_KEY = 'ritual_pin_hash';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function updatePinDots() {
+  for(let i=0;i<4;i++) {
+    document.getElementById('d'+i).className = 'pin-dot'+(i<pinBuffer.length?' filled':'');
+  }
+}
+
+async function pinKey(k) {
+  if(pinBuffer.length>=4) return;
+  pinBuffer += k;
+  updatePinDots();
+  document.getElementById('pinError').textContent = '';
+  if(pinBuffer.length===4) await checkPin();
+}
+
+function pinBackspace() { if(pinBuffer.length>0){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); } }
+
+async function checkPin() {
+  const stored = ls(STORED_HASH_KEY, null);
+  const hash = await sha256(pinBuffer);
+  if (!stored) {
+    // First time — set the PIN
+    ss(STORED_HASH_KEY, hash);
+    userId = hash.slice(0,16);
+    ss('ritual_uid', userId);
+    unlockApp();
+  } else {
+    if (hash === stored) {
+      userId = hash.slice(0,16);
+      ss('ritual_uid', userId);
+      unlockApp();
+    } else {
+      document.getElementById('pinError').textContent = 'Incorrect PIN, try again';
+      pinBuffer=''; updatePinDots();
+    }
+  }
+}
+
+function unlockApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appContent').style.display='block';
+  initApp();
+}
+
+function logout() {
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('appContent').style.display='none';
+  pinBuffer=''; updatePinDots();
+  document.getElementById('pinError').textContent='';
+}
+
+// Check if PIN is set yet
+window.addEventListener('DOMContentLoaded', () => {
+  const stored = ls(STORED_HASH_KEY, null);
+  document.getElementById('loginSubtitle').textContent = stored ? 'Enter your PIN to continue' : 'Choose a 4-digit PIN to get started';
+  document.getElementById('pinHint').textContent = stored ? '' : 'You\'ll use this PIN on all devices';
+});
+
+// ═══════════════════════════════════════════════
+//  SYNC / SUPABASE
+// ═══════════════════════════════════════════════
+function syncStatus(state, msg) {
+  const bar = document.getElementById('syncBar');
+  bar.textContent = msg; bar.className = 'sync-bar '+state;
+}
+
+async function dbGet(key) {
+  if (!db || !userId) return null;
+  try {
+    const {data,error} = await db.from('ritual_data').select('value').eq('user_id',userId).eq('key',key).single();
+    if(error||!data) return null;
+    return JSON.parse(data.value);
+  } catch { return null; }
+}
+
+async function dbSet(key, value) {
+  if (!db || !userId) return;
+  try {
+    syncStatus('syncing','↑ saving…');
+    await db.from('ritual_data').upsert({user_id:userId, key, value:JSON.stringify(value), updated_at:new Date().toISOString()},{onConflict:'user_id,key'});
+    syncStatus('ok','✓ synced');
+  } catch(e) { syncStatus('err','⚠ offline — saved locally'); }
+}
+
+async function loadFromDB(key, localFallback) {
+  const remote = await dbGet(key);
+  return remote !== null ? remote : localFallback;
+}
+
+// ═══════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════
+const TODAY = todayKey();
+const WEEK  = weekKey();
+
+let habits = {};        // { morning:[], skincare:[], hobbies:[] }
+let completedToday = [];
+let streaks = {};
+let calorieLog = [];
+let calorieGoal = 2000;
+let waterCount = 0;
+let plantsThisWeek = []; // array of ticked plant names
+let customPlants = { veg:[], fruit:[], grain:[] };
+
+// Default habits
+const DEFAULT_HABITS = {
+  morning: [
+    {id:'morning-stretch', name:'Morning stretch / yoga'},
+    {id:'morning-skincare', name:'Morning skincare routine'},
+    {id:'vitamins', name:'Take vitamins / supplements'},
+    {id:'journaling', name:'Journaling / gratitude'},
+  ],
+  skincare: [
+    {id:'double-cleanse', name:'Double cleanse'},
+    {id:'toner', name:'Toner / essence'},
+    {id:'serum', name:'Serum treatment'},
+    {id:'eye-cream', name:'Eye cream & moisturiser'},
+    {id:'spf-oil', name:'SPF (morning) / face oil'},
+  ],
+  hobbies: [
+    {id:'reading', name:'Reading (30+ mins)'},
+    {id:'creative', name:'Creative hobby / art'},
+    {id:'exercise', name:'Exercise / movement'},
+    {id:'meditation', name:'Mindfulness / meditation'},
+    {id:'screen-free', name:'Screen-free wind down'},
+  ]
+};
+
+// Default plants
+const DEFAULT_PLANTS = {
+  veg: ['Broccoli','Spinach','Kale','Carrot','Beetroot','Sweet potato','Courgette','Cucumber','Pepper','Tomato','Onion','Garlic','Cauliflower','Celery','Asparagus','Leek','Mushrooms','Peas','Green beans','Rocket'],
+  fruit: ['Apple','Banana','Orange','Berries','Mango','Grapes','Kiwi','Pear','Plum','Peach','Melon','Pineapple','Pomegranate','Avocado','Lemon','Lime'],
+  grain: ['Oats','Brown rice','Quinoa','Lentils','Chickpeas','Black beans','Kidney beans','Walnuts','Almonds','Cashews','Pumpkin seeds','Sunflower seeds','Flaxseed','Chia seeds','Wholegrain bread','Barley']
+};
+
+// ═══════════════════════════════════════════════
+//  INIT APP
+// ═══════════════════════════════════════════════
+async function initApp() {
+  if(db) syncStatus('syncing','↑ loading…');
+
+  // Load all state (remote first, local fallback)
+  habits         = await loadFromDB('habits', ls('habits', DEFAULT_HABITS));
+  completedToday = await loadFromDB(`done-${TODAY}`, ls(`done-${TODAY}`, []));
+  streaks        = await loadFromDB('streaks', ls('streaks', {}));
+  calorieLog     = await loadFromDB(`cal-${TODAY}`, ls(`cal-${TODAY}`, []));
+  calorieGoal    = await loadFromDB('cal-goal', ls('cal-goal', 2000));
+  waterCount     = await loadFromDB(`water-${TODAY}`, ls(`water-${TODAY}`, 0));
+  plantsThisWeek = await loadFromDB(`plants-${WEEK}`, ls(`plants-${WEEK}`, []));
+  customPlants   = await loadFromDB('custom-plants', ls('custom-plants', {veg:[],fruit:[],grain:[]}));
+
+  if(db) syncStatus('ok','✓ synced');
+
+  // Render
+  const d = new Date();
+  document.getElementById('dateDisplay').textContent = `${DAYS[d.getDay()]} · ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  document.getElementById('weekRangeLabel').textContent = weekRangeLabel();
+  document.getElementById('calGoalInput').value = calorieGoal;
+  document.getElementById('calGoalLabel').textContent = `Goal: ${calorieGoal.toLocaleString()} kcal`;
+  document.getElementById('calGoalMax').textContent = calorieGoal.toLocaleString();
+
+  const savedNotes = await loadFromDB(`notes-${TODAY}`, ls(`notes-${TODAY}`,''));
+  document.getElementById('notesArea').value = savedNotes;
+
+  const savedMood = await loadFromDB(`mood-${TODAY}`, ls(`mood-${TODAY}`, null));
+  if(savedMood) document.querySelectorAll('.mood-btn').forEach(b=>{ if(b.dataset.mood===savedMood||b.textContent.includes(savedMood.split(' ')[1])) b.classList.add('selected'); });
+
+  renderAllHabits();
+  buildWater();
+  renderPlants();
+  renderCalories();
+  renderStreaks();
+  updateRings();
+}
+
+// ═══════════════════════════════════════════════
+//  SAVE HELPER (local + remote)
+// ═══════════════════════════════════════════════
+let saveTimer = null;
+function debouncedSave() { clearTimeout(saveTimer); saveTimer = setTimeout(()=>saveNotes(),800); }
+
+async function persist(key, value) {
+  ss(key, value);
+  await dbSet(key, value);
+}
+
+async function saveNotes() { await persist(`notes-${TODAY}`, document.getElementById('notesArea').value); }
+
+// ═══════════════════════════════════════════════
+//  HABITS RENDERING + EDITING
+// ═══════════════════════════════════════════════
+function renderAllHabits() {
+  renderHabitList('morningList', 'morning');
+  renderHabitList('skincareList', 'skincare');
+  renderHabitList('hobbiesList', 'hobbies');
+  renderStreaks();
+}
+
+function renderHabitList(listId, group) {
+  const list = document.getElementById(listId);
+  list.innerHTML = '';
+  (habits[group]||[]).forEach((h,idx) => {
+    const done = completedToday.includes(h.id);
+    const streak = streaks[h.id]?.streak || 0;
+    const div = document.createElement('div');
+    div.className = 'habit-item'+(done?' done':'');
+    div.dataset.id = h.id;
+    div.innerHTML = `
+      <div class="habit-check" onclick="toggleHabit('${h.id}','${group}')"><span class="check-icon">✓</span></div>
+      <div class="habit-name-wrap" onclick="toggleHabit('${h.id}','${group}')">
+        <span class="habit-name">${h.name}</span>
+      </div>
+      ${streak>0 ? `<span class="habit-streak${streak>=7?' hot':''}">${streak>=14?'🏆':streak>=7?'🔥':'✨'} ${streak}d</span>` : '<span class="habit-streak"></span>'}
+      <div class="habit-actions">
+        <button class="hab-btn" title="Rename" onclick="renameHabit('${group}',${idx},this)">✏️</button>
+        <button class="hab-btn" title="Delete" onclick="deleteHabit('${group}',${idx})">🗑</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+async function toggleHabit(id, group) {
+  if(completedToday.includes(id)) { completedToday = completedToday.filter(x=>x!==id); }
+  else { completedToday.push(id); }
+  await persist(`done-${TODAY}`, completedToday);
+  renderHabitList(
+    group==='morning'?'morningList':group==='skincare'?'skincareList':'hobbiesList', group);
+  updateRings();
+}
+
+async function addHabit(group, inputEl) {
+  const name = inputEl.value.trim(); if(!name) return;
+  const id = group+'-'+Date.now();
+  habits[group] = habits[group]||[];
+  habits[group].push({id, name});
+  inputEl.value='';
+  await persist('habits', habits);
+  renderAllHabits();
+  updateRings();
+}
+
+function renameHabit(group, idx, btn) {
+  const item = btn.closest('.habit-item');
+  const nameEl = item.querySelector('.habit-name');
+  const current = habits[group][idx].name;
+  const input = document.createElement('input');
+  input.className='habit-name-input'; input.value=current;
+  nameEl.replaceWith(input);
+  input.focus();
+  const save = async () => {
+    const val = input.value.trim()||current;
+    habits[group][idx].name = val;
+    await persist('habits', habits);
+    renderHabitList(group==='morning'?'morningList':group==='skincare'?'skincareList':'hobbiesList', group);
+    renderStreaks();
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') input.blur(); });
+}
+
+async function deleteHabit(group, idx) {
+  if(!confirm(`Delete "${habits[group][idx].name}"?`)) return;
+  const removed = habits[group].splice(idx,1)[0];
+  completedToday = completedToday.filter(x=>x!==removed.id);
+  await persist('habits', habits);
+  await persist(`done-${TODAY}`, completedToday);
+  renderAllHabits();
+  updateRings();
+}
+
+// ═══════════════════════════════════════════════
+//  RINGS
+// ═══════════════════════════════════════════════
+function countGroup(group) {
+  const all = habits[group]||[];
+  const done = all.filter(h=>completedToday.includes(h.id)).length;
+  return {done, total:all.length};
+}
+
+function updateRings() {
+  const m=countGroup('morning'), h=countGroup('hobbies');
+  const tot = m.total+h.total;
+  setRing('ringHabits','ringHabitsText', tot===0?0:Math.round(((m.done+h.done)/tot)*100));
+  const s=countGroup('skincare');
+  setRing('ringSkin','ringSkinText', s.total===0?0:Math.round((s.done/s.total)*100));
+  setRing('ringWater','ringWaterText', Math.round((waterCount/8)*100));
+  setRing('ringPlants','ringPlantsText', Math.round((plantsThisWeek.length/30)*100));
+}
+function setRing(cid,tid,pct){
+  const c=213.6;
+  document.getElementById(cid).style.strokeDashoffset=c-(c*pct/100);
+  document.getElementById(tid).textContent=pct+'%';
+}
+
+// ═══════════════════════════════════════════════
+//  WATER
+// ═══════════════════════════════════════════════
+function buildWater() {
+  const wc=document.getElementById('waterGlasses'); wc.innerHTML='';
+  for(let i=0;i<8;i++){
+    const g=document.createElement('div');
+    g.className='water-glass'+(i<waterCount?' filled':'');
+    g.innerHTML=i<waterCount?'💧':'○';
+    g.onclick=async()=>{ waterCount=waterCount===i+1?i:i+1; await persist(`water-${TODAY}`,waterCount); buildWater(); updateRings(); };
+    wc.appendChild(g);
+  }
+  document.getElementById('waterLabel').textContent=`${waterCount} / 8 glasses`;
+}
+
+// ═══════════════════════════════════════════════
+//  MOOD
+// ═══════════════════════════════════════════════
+async function setMood(btn, key) {
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  await persist(`mood-${TODAY}`, key);
+}
+
+// ═══════════════════════════════════════════════
+//  30 PLANTS TRACKER
+// ═══════════════════════════════════════════════
+function renderPlants() {
+  renderChips('vegChips', DEFAULT_PLANTS.veg, customPlants.veg||[], 'veg');
+  renderChips('fruitChips', DEFAULT_PLANTS.fruit, customPlants.fruit||[], 'fruit');
+  renderChips('grainChips', DEFAULT_PLANTS.grain, customPlants.grain||[], 'grain');
+  updatePlantCount();
+}
+
+function renderChips(containerId, defaults, customs, type) {
+  const container = document.getElementById(containerId);
+  container.innerHTML='';
+  [...defaults, ...customs].forEach(name => {
+    const chip = document.createElement('div');
+    const ticked = plantsThisWeek.includes(name);
+    chip.className = 'plant-chip'+(ticked?' ticked':'')+(type==='fruit'?' fruit-chip':type==='grain'?' grain-chip':'');
+    chip.innerHTML = `${ticked?'✓ ':''}${name}`;
+    chip.onclick = async () => await togglePlant(name);
+    container.appendChild(chip);
+  });
+}
+
+async function togglePlant(name) {
+  if(plantsThisWeek.includes(name)) { plantsThisWeek=plantsThisWeek.filter(x=>x!==name); }
+  else { plantsThisWeek.push(name); }
+  await persist(`plants-${WEEK}`, plantsThisWeek);
+  renderPlants();
+  updateRings();
+}
+
+function updatePlantCount() {
+  const n = plantsThisWeek.length;
+  const el = document.getElementById('plantCount');
+  el.textContent = n;
+  el.className = 'plant-number'+(n>=30?' goal':'');
+  const pct = Math.min((n/30)*100,100);
+  document.getElementById('plantBar').style.width=pct+'%';
+  document.getElementById('plantProgressLabel').textContent=`${n} / 30${n>=30?' 🎉 Goal reached!':''}`;
+}
+
+async function addCustomPlant() {
+  const input = document.getElementById('customPlantInput');
+  const name = input.value.trim(); if(!name) return;
+  // Detect category (simple heuristic — add to veg by default, user can type e.g. "Mango (fruit)")
+  let cat = 'veg';
+  const lower = name.toLowerCase();
+  if(lower.includes('(fruit)')||lower.includes('fruit')) cat='fruit';
+  else if(lower.includes('(grain)')||lower.includes('grain')||lower.includes('bean')||lower.includes('nut')||lower.includes('seed')) cat='grain';
+  const cleanName = name.replace(/\s*\(.*\)/,'').trim();
+  customPlants[cat] = customPlants[cat]||[];
+  if(!customPlants[cat].includes(cleanName)) customPlants[cat].push(cleanName);
+  await persist('custom-plants', customPlants);
+  input.value='';
+  renderPlants();
+}
+
+// ═══════════════════════════════════════════════
+//  CALORIES
+// ═══════════════════════════════════════════════
+async function addCalorie() {
+  const name=document.getElementById('calFoodName').value.trim();
+  const amount=parseInt(document.getElementById('calAmount').value);
+  if(!name||isNaN(amount)||amount<=0) return;
+  calorieLog.push({name,amount});
+  await persist(`cal-${TODAY}`, calorieLog);
+  document.getElementById('calFoodName').value='';
+  document.getElementById('calAmount').value='';
+  renderCalories();
+  document.getElementById('calFoodName').focus();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('calAmount')?.addEventListener('keydown',e=>{if(e.key==='Enter')addCalorie();});
+  document.getElementById('calFoodName')?.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('calAmount').focus();});
+});
+
+async function removeCalorie(idx){ calorieLog.splice(idx,1); await persist(`cal-${TODAY}`,calorieLog); renderCalories(); }
+
+function renderCalories(){
+  const total=calorieLog.reduce((s,i)=>s+i.amount,0);
+  const pct=Math.min((total/calorieGoal)*100,100), over=total>calorieGoal;
+  const te=document.getElementById('calTotal');
+  te.textContent=total.toLocaleString(); te.className='calorie-total'+(over?' over':'');
+  const bar=document.getElementById('calBar');
+  bar.style.width=pct+'%'; bar.className='calorie-fill'+(over?' over':'');
+  const log=document.getElementById('calLog'); log.innerHTML='';
+  calorieLog.forEach((item,idx)=>{
+    const div=document.createElement('div'); div.className='log-item';
+    div.innerHTML=`<span class="log-item-name">${item.name}</span><div class="log-item-right"><span class="log-item-cal">${item.amount} kcal</span><button class="log-delete" onclick="removeCalorie(${idx})">✕</button></div>`;
+    log.appendChild(div);
+  });
+}
+
+async function updateGoal(){
+  const val=parseInt(document.getElementById('calGoalInput').value);
+  if(val&&val>0){ calorieGoal=val; await persist('cal-goal',val);
+    document.getElementById('calGoalLabel').textContent=`Goal: ${val.toLocaleString()} kcal`;
+    document.getElementById('calGoalMax').textContent=val.toLocaleString();
+    renderCalories(); }
+}
+
+// ═══════════════════════════════════════════════
+//  STREAKS
+// ═══════════════════════════════════════════════
+function renderStreaks() {
+  const grid=document.getElementById('streakGrid'); grid.innerHTML='';
+  const allHabits = [...(habits.morning||[]),...(habits.skincare||[]),...(habits.hobbies||[])];
+  allHabits.forEach(h=>{
+    const d=streaks[h.id]||{streak:0};
+    const row=document.createElement('div');
+    row.className='streak-row'+(d.streak===0?' streak-zero':'');
+    const icon=d.streak>=14?'🏆':d.streak>=7?'🔥':d.streak>=3?'✨':'○';
+    row.innerHTML=`<span class="streak-habit-name">${h.name}</span><div style="text-align:right"><div class="streak-count">${d.streak} <span style="font-size:14px">${icon}</span></div><div class="streak-unit">day${d.streak!==1?'s':''}</div></div>`;
+    grid.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  COMPLETE DAY
+// ═══════════════════════════════════════════════
+async function completeDay() {
+  if(!confirm('Complete today and reset for a new day?\n\nStreaks will update based on what you ticked off.')) return;
+
+  // Update streaks
+  const allHabits = [...(habits.morning||[]),...(habits.skincare||[]),...(habits.hobbies||[])];
+  allHabits.forEach(h=>{
+    const done=completedToday.includes(h.id);
+    const cur=streaks[h.id]||{streak:0,lastDate:null};
+    if(done){
+      if(cur.lastDate===prevKey(TODAY)) cur.streak=cur.streak+1;
+      else if(cur.lastDate===TODAY){/* already saved */}
+      else cur.streak=1;
+      cur.lastDate=TODAY;
+    } else { cur.streak=0; }
+    streaks[h.id]=cur;
+  });
+  await persist('streaks', streaks);
+
+  // Reset today
+  completedToday=[]; await persist(`done-${TODAY}`,[]);
+  calorieLog=[]; await persist(`cal-${TODAY}`,[]);
+  waterCount=0; await persist(`water-${TODAY}`,0);
+  document.getElementById('notesArea').value='';
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+
+  buildWater(); renderCalories(); renderAllHabits(); updateRings();
+  document.getElementById('dateDisplay').textContent='See you tomorrow 🌿';
+}
+</script>
+</body>
+</html>
